@@ -1,6 +1,6 @@
 name: spt_headless_controller
 display_name: SPT Headless Controller
 desc: 监听“A1卡了”等群聊消息，通过官方 Fika API 重启对应 Headless 并确认请求结果。
-version: v1.4.0
-author: Mochix2Neko
+version: v1.5.1
+author: Mochix2Milk
 repo: https://github.com/MilkKira/SPT_HeadlessController

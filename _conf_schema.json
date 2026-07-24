@@ -2,7 +2,7 @@
   "fika_server_url": {
     "type": "string",
     "description": "Fika Server 地址",
-    "hint": "填写服务器根地址，例如 http://192.168.1.10:6969；不要填写 fika/api 路径。",
+    "hint": "填写服务器根地址，例如 https://192.168.1.10:6969；省略协议时自动使用 https://，不要填写 fika/api 路径。",
     "default": ""
   },
   "fika_api_key": {
@@ -20,13 +20,13 @@
   "verify_ssl": {
     "type": "bool",
     "description": "验证 HTTPS 证书",
-    "hint": "仅在局域网使用自签名 HTTPS 证书时考虑关闭。",
-    "default": true
+    "hint": "SPT 默认使用自签名证书，因此默认关闭；仅在服务器使用受信任证书时开启。",
+    "default": false
   },
   "trigger_suffix": {
     "type": "string",
     "description": "触发消息后缀",
-    "hint": "节点名与此后缀组合成触发消息，例如 A1 + 卡了 = A1卡了。",
+    "hint": "节点名或别名与此后缀组合成触发消息，例如 A1 + 卡了 = A1卡了；不能为空。",
     "default": "卡了"
   },
   "allowed_group_ids": {
@@ -44,17 +44,19 @@
   "allow_private_messages": {
     "type": "bool",
     "description": "允许私聊触发",
+    "hint": "开启后私聊不受群号白名单限制，但仍受用户 ID 白名单限制。",
     "default": false
   },
   "request_timeout_seconds": {
     "type": "int",
     "description": "Fika API 请求超时秒数",
+    "hint": "无效值使用 10 秒，小于 1 的值按 1 秒处理。",
     "default": 10
   },
   "cooldown_seconds": {
     "type": "int",
     "description": "同一节点重启冷却秒数",
-    "hint": "避免同一台 Headless 被短时间重复重启。",
+    "hint": "从请求开始计时，避免同一台 Headless 被短时间重复重启；小于 0 的值按 0 处理。",
     "default": 60
   },
   "nodes": {
