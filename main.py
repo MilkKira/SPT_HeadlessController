@@ -12,11 +12,16 @@ from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 
 
+HEADLESS_TRIGGER_PATTERN = (
+    r"(?i)^\s*[a-z][a-z0-9_-]*\s*卡了\s*[。.!！?？]?\s*$"
+)
+
+
 @register(
     "spt_headless_controller",
     "Mochix2Neko",
     "监听群聊中的 Headless 故障消息并通过 Fika API 发送重启请求",
-    "1.2.0",
+    "1.4.0",
 )
 class HeadlessController(Star):
     HEADLESS_PATH = "fika/api/headless"
@@ -31,15 +36,74 @@ class HeadlessController(Star):
 
     async def initialize(self):
         self._session = self._create_session()
+        node_names = [
+            str(node.get("name", "")).strip()
+            for node in self.config.get("nodes", [])
+            if isinstance(node, dict) and node.get("enabled", True)
+        ]
+        logger.info(
+            "SPT Headless Controller loaded: server_configured=%s, nodes=%s",
+            bool(str(self.config.get("fika_server_url", "")).strip()),
+            node_names,
+        )
 
-    @filter.event_message_type(filter.EventMessageType.ALL)
+    @filter.command("headless_status", alias={"无头状态"})
+    async def headless_status(self, event: AstrMessageEvent):
+        """检查 Fika API、节点和当前会话的插件配置状态。"""
+        server_configured = bool(
+            str(self.config.get("fika_server_url", "")).strip()
+        )
+        api_key_configured = bool(
+            str(self.config.get("fika_api_key", "")).strip()
+        )
+        nodes = [
+            node
+            for node in self.config.get("nodes", [])
+            if isinstance(node, dict) and node.get("enabled", True)
+        ]
+        node_states = [
+            f"{str(node.get('name', '')).strip() or '未命名'}"
+            f"（profileId{'已配置' if str(node.get('profile_id', '')).strip() else '未配置'}）"
+            for node in nodes
+        ]
+        group_id = str(event.get_group_id() or "私聊")
+        allowed = self._is_allowed(event)
+        node_summary = "、".join(node_states) if node_states else "未配置任何节点"
+
+        yield event.plain_result(
+            "SPT Headless Controller 已加载\n"
+            f"Fika Server：{'已配置' if server_configured else '未配置'}\n"
+            f"API Key：{'已配置' if api_key_configured else '未配置'}\n"
+            f"Headless 节点：{node_summary}\n"
+            f"当前会话：{group_id}，{'允许' if allowed else '不允许'}触发\n"
+            "调用格式：A1卡了"
+        )
+
+    @filter.regex(HEADLESS_TRIGGER_PATTERN)
     async def on_message(self, event: AstrMessageEvent):
         """识别“节点名卡了”消息并调用 Fika Headless 重启接口。"""
-        node = self._find_node(event.message_str)
-        if node is None or not self._is_allowed(event):
+        trigger_identifier = self._extract_trigger_identifier(event.message_str)
+        if trigger_identifier is None:
+            return
+
+        if not self._is_allowed(event):
+            logger.warning(
+                "Ignored Headless restart trigger from sender=%s group=%s: not allowed",
+                event.get_sender_id(),
+                event.get_group_id(),
+            )
             return
 
         event.stop_event()
+        node = self._find_node(trigger_identifier)
+        if node is None:
+            yield event.plain_result(
+                f"识别到节点 {trigger_identifier.upper()} 的重启消息，"
+                "但插件中没有配置此节点。请先在插件设置中添加节点，"
+                "或发送 /headless_status 检查配置。"
+            )
+            return
+
         node_name = str(node["name"]).strip()
         node_key = node_name.casefold()
         lock = self._node_locks.setdefault(node_key, asyncio.Lock())
@@ -67,12 +131,20 @@ class HeadlessController(Star):
         else:
             yield event.plain_result(f"{node_name} 重启请求失败：{detail}")
 
-    def _find_node(self, message: str) -> dict[str, Any] | None:
+    def _extract_trigger_identifier(self, message: str) -> str | None:
         normalized_message = self._normalize_text(message)
         suffix = self._normalize_text(str(self.config.get("trigger_suffix", "卡了")))
-        if not normalized_message or not suffix:
+        if (
+            not normalized_message
+            or not suffix
+            or not normalized_message.endswith(suffix)
+            or len(normalized_message) <= len(suffix)
+        ):
             return None
+        return normalized_message[: -len(suffix)]
 
+    def _find_node(self, trigger_identifier: str) -> dict[str, Any] | None:
+        normalized_trigger = self._normalize_text(trigger_identifier)
         for node in self.config.get("nodes", []):
             if not isinstance(node, dict) or not node.get("enabled", True):
                 continue
@@ -81,7 +153,7 @@ class HeadlessController(Star):
             identifiers = [node.get("name", ""), *aliases]
             for identifier in identifiers:
                 normalized_identifier = self._normalize_text(str(identifier))
-                if normalized_identifier and normalized_message == normalized_identifier + suffix:
+                if normalized_identifier and normalized_trigger == normalized_identifier:
                     return node
         return None
 

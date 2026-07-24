@@ -1,6 +1,6 @@
 # SPT Headless Controller
 
-AstrBot 插件：监听群聊中的 Headless 故障消息，例如 `A1卡了`、`W3卡了`，然后通过官方 Fika API 请求重启对应 Headless。
+AstrBot 插件：使用不受 AstrBot wake_prefix 限制的正则过滤器监听群聊消息，例如 `A1卡了`、`W3卡了`，然后通过官方 Fika API 请求重启对应 Headless。
 
 ## 使用的 Fika API
 
@@ -44,6 +44,22 @@ Restart 接口返回 HTTP `200` 时，插件确认重启请求已成功提交。
 - profileId：`678098765432109876543210`
 
 `profileId` 是 Headless 的 MongoDB ObjectID，可以从 Fika WebApp 的 Headless 页面或 `GET /fika/api/headless` 响应中找到。
+
+## 首次调用与自检
+
+配置并重载插件后，先在 QQ 群内发送：
+
+```text
+/headless_status
+```
+
+插件会显示 Fika Server、API Key、Headless 节点以及当前群白名单是否配置正确。确认 A1 显示为“profileId已配置”且当前会话允许触发后，再发送：
+
+```text
+A1卡了
+```
+
+如果消息格式正确但没有配置 A1，插件会明确回复节点未配置，不再静默忽略。若 `/headless_status` 也完全没有回复，请在 AstrBot 插件管理中确认插件已启用并完成重载。
 
 ## 使用
 
