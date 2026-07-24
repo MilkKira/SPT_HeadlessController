@@ -3,13 +3,13 @@
 ## 1. 当前状态
 
 - 项目类型：AstrBot Python 插件，用于通过 Fika API 重启指定 Headless。
-- 当前版本：`v1.5.1`。
+- 当前版本：`v1.5.2`。
 - 作者标识：`Mochix2Milk`。
 - 当前基线提交：`10a4cba`（`Update logo`）。
 - 目标接口基线：Project Fika 官方文档标注的 SPT 4.0 / Fika 2.0 API。
 - Python 运行依赖：`aiohttp>=3.9,<4`。
-- 当前发布包：`SPT_HeadlessController-v1.5.1.zip`。
-- 发布包 SHA-256：`FC3ED094B89620D596F4AAD44B9018E9609C1543958DD4687E2E2BA0741B6488`。
+- 当前发布包：`SPT_HeadlessController-v1.5.2.zip`。
+- 发布包 SHA-256：`8731ACC65353DCBCE2F84901E483657ED87FEB85376DE4D061D14111BC3DABF4`。
 
 发布包根目录包含：
 
@@ -42,7 +42,7 @@ _conf_schema.json
 ## 3. 运行流程
 
 1. `HeadlessTriggerFilter` 在 AstrBot 唤醒阶段读取当前 `trigger_suffix`，只让形如“节点名 + 后缀”的消息进入处理器。
-2. `on_message()` 检查群聊/私聊来源和发送者白名单。
+2. `on_message()` 检查群聊/私聊来源和发送者白名单；未通过时截断事件并回复“您的权限不足，无法重启”。
 3. 根据节点名或别名查找已启用节点；找不到时返回明确提示。
 4. 校验 Fika 地址、API Key 和节点 `profileId`，静态配置错误不会进入冷却。
 5. 使用节点级 `asyncio.Lock` 防止并发请求，并从首次网络检查开始记录冷却时间。
@@ -97,7 +97,7 @@ requestcompressed: 0
 
 ### 安装或升级
 
-1. 在 AstrBot WebUI 上传 `SPT_HeadlessController-v1.5.1.zip`，或将包内文件放入对应插件目录。
+1. 在 AstrBot WebUI 上传 `SPT_HeadlessController-v1.5.2.zip`，或将包内文件放入对应插件目录。
 2. 保存插件配置并重载插件。
 3. 旧配置升级时，将 Fika 地址检查为 `https://<IP>:6969`。
 4. 使用 SPT 默认自签名证书时，关闭“验证 HTTPS 证书”。
@@ -117,13 +117,14 @@ A1 重启请求已成功提交。（Fika API HTTP 200）
 
 | 现象 | 检查项 |
 | --- | --- |
-| 停在“正在确认” | v1.5.1 会在 HTTP 超时外再等待约 2 秒后返回硬超时提示；检查地址、防火墙及 AstrBot 日志 |
+| 停在“正在确认” | v1.5.2 会在 HTTP 超时外再等待约 2 秒后返回硬超时提示；检查地址、防火墙及 AstrBot 日志 |
 | HTTPS 证书验证失败 | SPT 默认自签名证书场景关闭 `verify_ssl` |
 | HTTP 401 | 检查 `Authorization: Bearer` 格式及服务器配置 |
 | HTTP 403 | 检查 API Key |
 | HTTP 404 | 检查接口版本、Headless 在线状态和基础地址是否误带 `fika/api` |
 | 找不到 `profileId` | 从 Fika WebApp 或 `GET /fika/api/headless` 重新获取 |
-| 消息完全不触发 | 检查插件是否加载、动态后缀、节点/别名、群和发送者白名单 |
+| 回复“您的权限不足，无法重启” | 当前群或发送者未通过对应白名单；QQ 官方机器人应填写 `/sid` 返回的 UID |
+| 消息完全不触发 | 检查插件是否加载、动态后缀以及节点/别名 |
 
 ## 7. 已完成验证
 
@@ -137,8 +138,8 @@ python -m unittest discover -s tests -v
 截至交接时：
 
 - Python 语法编译通过。
-- 15 项单元测试全部通过。
-- 覆盖动态后缀、中文/单值别名、群和发送者权限、私聊规则、数值容错、HTTPS 自动补全、显式 HTTP 保留、SSL 开关、在线检查开关、请求头/请求体、无效 URL、硬超时后的最终结果路径以及 Schema 一致性。
+- 17 项单元测试全部通过。
+- 覆盖动态后缀、中文/单值别名、群和发送者权限拒绝提示、私聊规则、数值容错、HTTPS 自动补全、显式 HTTP 保留、SSL 开关、在线检查开关、请求头/请求体、无效 URL、硬超时后的最终结果路径以及 Schema 一致性。
 - 发布包清单、包内版本和作者信息已检查。
 
 测试通过桩对象隔离 AstrBot 与 aiohttp 边界，因此不能代替真实 AstrBot + Fika 环境的集成测试。

@@ -278,6 +278,32 @@ class TriggerAndAccessTests(unittest.TestCase):
 
 
 class ApiRequestTests(unittest.IsolatedAsyncioTestCase):
+    async def test_sender_outside_whitelist_gets_permission_denied_reply(self) -> None:
+        controller = main.HeadlessController(
+            None,
+            _config(allowed_group_ids=["1"], allowed_sender_ids=["allowed"]),
+        )
+        event = _Event("A1卡了", group_id="1", sender_id="denied")
+
+        results = [result async for result in controller.on_message(event)]
+
+        self.assertEqual(results, ["您的权限不足，无法重启"])
+        self.assertTrue(event.stopped)
+        self.assertEqual(controller._last_requests, {})
+
+    async def test_group_outside_whitelist_gets_permission_denied_reply(self) -> None:
+        controller = main.HeadlessController(
+            None,
+            _config(allowed_group_ids=["1"], allowed_sender_ids=["allowed"]),
+        )
+        event = _Event("A1卡了", group_id="9", sender_id="allowed")
+
+        results = [result async for result in controller.on_message(event)]
+
+        self.assertEqual(results, ["您的权限不足，无法重启"])
+        self.assertTrue(event.stopped)
+        self.assertEqual(controller._last_requests, {})
+
     async def test_static_config_error_does_not_start_cooldown(self) -> None:
         controller = main.HeadlessController(None, _config(fika_api_key=""))
         event = _Event("A1卡了", group_id="1", sender_id="2")

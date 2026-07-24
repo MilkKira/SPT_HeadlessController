@@ -13,7 +13,7 @@ from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 
 
-PLUGIN_VERSION = "1.5.1"
+PLUGIN_VERSION = "1.5.2"
 DEFAULT_TRIGGER_SUFFIX = "重启"
 TRAILING_PUNCTUATION = "。.!！?？"
 
@@ -153,6 +153,9 @@ class HeadlessController(Star):
                 event.get_sender_id(),
                 event.get_group_id(),
             )
+            # 权限不足时直接终止事件，避免消息继续进入其他插件或大模型处理。
+            event.stop_event()
+            yield event.plain_result("您的权限不足，无法重启")
             return
 
         event.stop_event()
