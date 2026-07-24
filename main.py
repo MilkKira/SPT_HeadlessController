@@ -14,7 +14,7 @@ from astrbot.api.star import Context, Star, register
 
 
 PLUGIN_VERSION = "1.5.1"
-DEFAULT_TRIGGER_SUFFIX = "卡了"
+DEFAULT_TRIGGER_SUFFIX = "重启"
 TRAILING_PUNCTUATION = "。.!！?？"
 
 
@@ -97,7 +97,7 @@ class HeadlessController(Star):
         for warning in self._configuration_warnings():
             logger.warning("SPT Headless Controller config: %s", warning)
 
-    @filter.command("headless_status", alias={"无头状态"})
+    @filter.command("无头配置", alias={"无头配置"})
     async def headless_status(self, event: AstrMessageEvent):
         """检查 Fika API、节点和当前会话的插件配置状态。"""
         server_configured = bool(
@@ -161,7 +161,7 @@ class HeadlessController(Star):
             yield event.plain_result(
                 f"识别到节点 {trigger_identifier.upper()} 的重启消息，"
                 "但插件中没有配置此节点。请先在插件设置中添加节点，"
-                "或发送 /headless_status 检查配置。"
+                "或发送<无头配置>检查配置。"
             )
             return
 
@@ -301,7 +301,7 @@ class HeadlessController(Star):
                     response.status,
                 )
                 if response.status == 200:
-                    return True, "（Fika API HTTP 200）"
+                    return True, "（API HTTP 200）"
                 return False, self._http_error(response.status)
         except TimeoutError:
             logger.warning(
