@@ -1,0 +1,96 @@
+{
+  "fika_server_url": {
+    "type": "string",
+    "description": "Fika Server 地址",
+    "hint": "填写服务器根地址，例如 http://192.168.1.10:6969；不要填写 fika/api 路径。",
+    "default": ""
+  },
+  "fika_api_key": {
+    "type": "string",
+    "description": "Fika API Key",
+    "hint": "对应 Fika server 配置中的 API Key。插件会以 Authorization: Bearer <API Key> 发送。",
+    "default": ""
+  },
+  "verify_headless_online": {
+    "type": "bool",
+    "description": "重启前确认 Headless 在线",
+    "hint": "先请求 fika/api/headless，确认 profileId 存在后再发送重启请求。",
+    "default": true
+  },
+  "verify_ssl": {
+    "type": "bool",
+    "description": "验证 HTTPS 证书",
+    "hint": "仅在局域网使用自签名 HTTPS 证书时考虑关闭。",
+    "default": true
+  },
+  "trigger_suffix": {
+    "type": "string",
+    "description": "触发消息后缀",
+    "hint": "节点名与此后缀组合成触发消息，例如 A1 + 卡了 = A1卡了。",
+    "default": "卡了"
+  },
+  "allowed_group_ids": {
+    "type": "list",
+    "description": "允许触发的群号",
+    "hint": "留空表示允许所有群聊；建议填写实际使用的 QQ 群号。",
+    "default": []
+  },
+  "allowed_sender_ids": {
+    "type": "list",
+    "description": "允许触发的用户 ID",
+    "hint": "留空表示群内所有成员都可触发；填写后仅允许指定 QQ 用户。",
+    "default": []
+  },
+  "allow_private_messages": {
+    "type": "bool",
+    "description": "允许私聊触发",
+    "default": false
+  },
+  "request_timeout_seconds": {
+    "type": "int",
+    "description": "Fika API 请求超时秒数",
+    "default": 10
+  },
+  "cooldown_seconds": {
+    "type": "int",
+    "description": "同一节点重启冷却秒数",
+    "hint": "避免同一台 Headless 被短时间重复重启。",
+    "default": 60
+  },
+  "nodes": {
+    "type": "template_list",
+    "description": "Headless 节点",
+    "templates": {
+      "headless_node": {
+        "name": "Headless 节点",
+        "display_item": "name",
+        "hide_hint_in_list": true,
+        "items": {
+          "name": {
+            "type": "string",
+            "description": "节点名",
+            "hint": "群聊中使用的名称，例如 A1 或 W3。",
+            "default": "A1"
+          },
+          "aliases": {
+            "type": "list",
+            "description": "节点别名",
+            "hint": "可选，例如填写 a-1 后，a-1卡了 也能触发。",
+            "default": []
+          },
+          "profile_id": {
+            "type": "string",
+            "description": "Headless profileId",
+            "hint": "Fika Headless 的 MongoDB ObjectID；可从 WebApp Headless 页面或 fika/api/headless 获取。",
+            "default": ""
+          },
+          "enabled": {
+            "type": "bool",
+            "description": "启用此节点",
+            "default": true
+          }
+        }
+      }
+    }
+  }
+}
